@@ -15,6 +15,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+
 // Seed jobs from pipeline definitions produced by tools/jil2pipeline.py
 var pipelineDir = Path.Combine(AppContext.BaseDirectory, "pipelines");
 if (Directory.Exists(pipelineDir))
