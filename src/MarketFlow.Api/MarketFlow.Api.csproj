@@ -11,6 +11,6 @@
     <ProjectReference Include="..\MarketFlow.Core\MarketFlow.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="pipelines\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Update="pipelines\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
