@@ -123,4 +123,4 @@ pytest scheduler -q    # migration tool
 
 ## License
 
-MIT
+Bhavesh Patel
