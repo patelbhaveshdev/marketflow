@@ -17,4 +17,4 @@ public sealed record Job
     public JobPriority Priority { get; init; } = JobPriority.Normal;
 }
 
-public enum JobPriority { Low, Normal, High, Critical }
+public enum JobPriority { Low, Normal, High, Critical}
