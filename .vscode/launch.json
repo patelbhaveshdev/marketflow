@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "MarketFlow API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/MarketFlow.Api/bin/Debug/net8.0/MarketFlow.Api.dll",
+      "cwd": "${workspaceFolder}/src/MarketFlow.Api",
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development" },
+      "serverReadyAction": { "action": "openExternally", "pattern": "Now listening on:\\s+(https?://\\S+)", "uriFormat": "%s/swagger" }
+    }
+  ]
+}

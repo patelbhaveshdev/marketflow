@@ -1,0 +1,58 @@
+[
+  {
+    "name": "MF_INGEST_TRADES",
+    "command": "python /opt/marketflow/ingest_raw_trades.py --date $$RUNDATE",
+    "dependsOn": [],
+    "machine": "prod-batch-01",
+    "description": "Ingest raw trade JSON from upstream OMS drops",
+    "startTime": "05:30:00",
+    "calendar": "weekdays",
+    "maxRetries": 3,
+    "priority": "Critical"
+  },
+  {
+    "name": "MF_TRANSFORM_TRADES",
+    "command": "databricks jobs run-now --job-name transform_trades",
+    "dependsOn": [
+      "MF_INGEST_TRADES"
+    ],
+    "machine": "prod-batch-01",
+    "description": "Normalize, dedupe and enrich raw trades to Delta",
+    "maxRetries": 2,
+    "priority": "Critical"
+  },
+  {
+    "name": "MF_LOAD_CURATED",
+    "command": "sqlcmd -S azuresql-prod -i /opt/marketflow/sql/load_curated.sql",
+    "dependsOn": [
+      "MF_TRANSFORM_TRADES"
+    ],
+    "machine": "prod-batch-01",
+    "description": "Publish curated trades to Azure SQL for reporting",
+    "maxRetries": 3,
+    "priority": "High"
+  },
+  {
+    "name": "MF_EOD_RECON",
+    "command": "python /opt/marketflow/reconcile.py --mode eod",
+    "dependsOn": [
+      "MF_LOAD_CURATED"
+    ],
+    "machine": "prod-batch-02",
+    "description": "Match-off executed trades vs. clearing feed",
+    "startTime": "18:15:00",
+    "maxRetries": 2,
+    "priority": "Critical"
+  },
+  {
+    "name": "MF_EOD_REPORT",
+    "command": "dotnet /opt/marketflow/ReportRunner.dll --report eod-summary",
+    "dependsOn": [
+      "MF_EOD_RECON"
+    ],
+    "machine": "prod-batch-02",
+    "description": "Distribute EOD summary to trading desks",
+    "maxRetries": 1,
+    "priority": "Normal"
+  }
+]

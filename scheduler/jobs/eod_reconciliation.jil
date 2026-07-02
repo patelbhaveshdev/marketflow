@@ -1,0 +1,24 @@
+/* Legacy AutoSys stream: end-of-day reconciliation */
+
+insert_job: MF_EOD_RECON
+job_type: c
+command: python /opt/marketflow/reconcile.py --mode eod
+machine: prod-batch-02
+owner: svc_marketflow
+description: "Match-off executed trades vs. clearing feed"
+condition: s(MF_LOAD_CURATED)
+start_times: "18:15"
+n_retrys: 2
+priority: 1
+alarm_if_fail: 1
+
+insert_job: MF_EOD_REPORT
+job_type: c
+command: dotnet /opt/marketflow/ReportRunner.dll --report eod-summary
+machine: prod-batch-02
+owner: svc_marketflow
+description: "Distribute EOD summary to trading desks"
+condition: s(MF_EOD_RECON)
+n_retrys: 1
+priority: 3
+alarm_if_fail: 1

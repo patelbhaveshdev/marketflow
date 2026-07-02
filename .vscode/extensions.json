@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "ms-dotnettools.csdevkit",
+    "ms-python.python",
+    "ms-mssql.mssql",
+    "databricks.databricks",
+    "github.vscode-github-actions"
+  ]
+}

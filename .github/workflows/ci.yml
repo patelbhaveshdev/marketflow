@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  dotnet:
+    name: .NET build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - run: dotnet restore MarketFlow.sln
+      - run: dotnet build MarketFlow.sln --no-restore --configuration Release
+      - run: dotnet test MarketFlow.sln --no-build --configuration Release --verbosity normal
+
+  python:
+    name: Python migration tool tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pytest
+      - run: pytest scheduler -q
+      - name: Verify JIL migration end-to-end
+        run: |
+          python scheduler/jil2pipeline.py \
+            scheduler/jobs/daily_trades.jil scheduler/jobs/eod_reconciliation.jil \
+            --out /tmp/pipeline.json
+          test -s /tmp/pipeline.json

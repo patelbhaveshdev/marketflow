@@ -1,0 +1,36 @@
+/* Legacy AutoSys stream: daily trade ingestion (migrated to MarketFlow) */
+
+insert_job: MF_INGEST_TRADES
+job_type: c
+command: python /opt/marketflow/ingest_raw_trades.py --date $$RUNDATE
+machine: prod-batch-01
+owner: svc_marketflow
+description: "Ingest raw trade JSON from upstream OMS drops"
+start_times: "05:30"
+date_conditions: 1
+run_calendar: weekdays
+n_retrys: 3
+priority: 1
+alarm_if_fail: 1
+
+insert_job: MF_TRANSFORM_TRADES
+job_type: c
+command: databricks jobs run-now --job-name transform_trades
+machine: prod-batch-01
+owner: svc_marketflow
+description: "Normalize, dedupe and enrich raw trades to Delta"
+condition: s(MF_INGEST_TRADES)
+n_retrys: 2
+priority: 1
+alarm_if_fail: 1
+
+insert_job: MF_LOAD_CURATED
+job_type: c
+command: sqlcmd -S azuresql-prod -i /opt/marketflow/sql/load_curated.sql
+machine: prod-batch-01
+owner: svc_marketflow
+description: "Publish curated trades to Azure SQL for reporting"
+condition: s(MF_TRANSFORM_TRADES)
+n_retrys: 3
+priority: 2
+alarm_if_fail: 1

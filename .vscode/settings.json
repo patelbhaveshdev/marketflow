@@ -1,0 +1,7 @@
+{
+  "dotnet.defaultSolution": "MarketFlow.sln",
+  "editor.formatOnSave": true,
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["scheduler"],
+  "files.exclude": { "**/bin": true, "**/obj": true, "**/__pycache__": true }
+}

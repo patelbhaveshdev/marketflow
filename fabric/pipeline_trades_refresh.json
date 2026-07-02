@@ -1,0 +1,29 @@
+{
+  "name": "pl_trades_semantic_refresh",
+  "objectType": "DataPipeline",
+  "properties": {
+    "description": "Refresh trades semantic model after MarketFlow MF_LOAD_CURATED succeeds.",
+    "activities": [
+      {
+        "name": "WaitForCuratedLoad",
+        "type": "WebActivity",
+        "typeProperties": {
+          "url": "https://<marketflow-api>/api/runs",
+          "method": "GET"
+        }
+      },
+      {
+        "name": "RefreshSemanticModel",
+        "type": "SemanticModelRefresh",
+        "dependsOn": [
+          { "activity": "WaitForCuratedLoad", "dependencyConditions": ["Succeeded"] }
+        ],
+        "typeProperties": {
+          "workspaceId": "<workspace-guid>",
+          "semanticModelId": "<model-guid>",
+          "refreshType": "full"
+        }
+      }
+    ]
+  }
+}
