@@ -1,6 +1,6 @@
 # MarketFlow
 
-[![CI](https://github.com/patelbhavesh-developer/marketflow/actions/workflows/ci.yml/badge.svg)](https://github.com/patelbhavesh-developer/marketflow/actions/workflows/ci.yml)
+[![CI](https://github.com/patelbhaveshdev/marketflow/actions/workflows/ci.yml/badge.svg)](https://github.com/patelbhaveshdev/marketflow/actions/workflows/ci.yml)
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB)
 ![Azure](https://img.shields.io/badge/Azure-SQL%20%7C%20Databricks%20%7C%20Fabric-0078D4)
