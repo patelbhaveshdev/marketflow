@@ -1,14 +1,27 @@
 # Databricks notebook source
 # MAGIC %md
 # MAGIC # 03 - Load Curated
-# MAGIC Silver -> Azure SQL curated layer consumed by reporting and the
-# MAGIC MarketFlow REST API. Also lands gold Parquet in OneLake for
-# MAGIC Microsoft Fabric semantic models (see /fabric).
+# MAGIC Silver -> gold Parquet (Unity Catalog Volume) + Azure SQL staging load.
+# MAGIC After this notebook, the orchestrator calls `curated.usp_MergeTrades` to
+# MAGIC MERGE staging into the curated table consumed by the REST API and reporting.
+# MAGIC
+# MAGIC **Credentials:** the SQL password below is a placeholder. In a real
+# MAGIC workspace store it in a secret scope and read it with
+# MAGIC `dbutils.secrets.get(scope="marketflow", key="sql-password")` - never
+# MAGIC hard-code a password in a committed notebook.
 
 # COMMAND ----------
+# Your workspace's catalog (must match notebooks 01/02).
+CATALOG = "dbw_marketflow"
+spark.sql(f"USE CATALOG {CATALOG}")
+
 SILVER_TABLE = "marketflow.silver_trades"
-GOLD_PATH = "abfss://gold@marketflowsa.dfs.core.windows.net/trades_daily/"
-SQL_URL = "jdbc:sqlserver://<your-server>.database.windows.net:1433;database=marketflow"
+GOLD_PATH = f"/Volumes/{CATALOG}/marketflow/gold/trades_daily/"
+
+SQL_HOST = "marketflow-sql-bp.database.windows.net"
+SQL_DB = "marketflow"
+SQL_USER = "bhavesh"
+SQL_PASSWORD = "<your-sql-password>"  # use dbutils.secrets.get(...) in production
 
 # COMMAND ----------
 from pyspark.sql import functions as F
@@ -25,18 +38,33 @@ daily = (
 )
 
 # COMMAND ----------
-# Gold Parquet for Microsoft Fabric (OneLake shortcut points here)
+# Gold Parquet in a UC Volume (a Fabric OneLake shortcut can point here).
+spark.sql("CREATE VOLUME IF NOT EXISTS marketflow.gold")
 daily.write.mode("overwrite").partitionBy("trade_date").parquet(GOLD_PATH)
 
-# Curated Azure SQL for API/reporting (staging + MERGE via stored proc)
+# COMMAND ----------
+# Curated Azure SQL: load silver into the staging table.
+# Requires "Allow Azure services and resources to access this server" on the
+# Azure SQL server firewall so Databricks can connect.
 (
     spark.table(SILVER_TABLE)
-    .write.format("jdbc")
-    .option("url", SQL_URL)
+    .write.format("sqlserver")
+    .option("host", SQL_HOST)
+    .option("database", SQL_DB)
     .option("dbtable", "staging.Trades")
-    .option("authentication", "ActiveDirectoryMSI")
+    .option("user", SQL_USER)
+    .option("password", SQL_PASSWORD)
     .mode("overwrite")
     .save()
 )
 
-spark.sql("SELECT 1")  # placeholder: orchestrator invokes usp_MergeTrades next
+print("gold parquet + SQL staging load complete")
+
+# COMMAND ----------
+# MAGIC %md
+# MAGIC Next, in SQL (SSMS or Azure Query editor):
+# MAGIC ```sql
+# MAGIC EXEC curated.usp_MergeTrades;
+# MAGIC SELECT COUNT(*) FROM curated.Trades;                      -- expect 200
+# MAGIC EXEC curated.usp_GetDailySummary @TradeDate = '2026-07-01';
+# MAGIC ```

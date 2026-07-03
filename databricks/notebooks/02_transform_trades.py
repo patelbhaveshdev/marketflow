@@ -8,6 +8,10 @@
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
+# Your workspace's catalog (must match notebook 01).
+CATALOG = "dbw_marketflow"
+spark.sql(f"USE CATALOG {CATALOG}")
+
 BRONZE_TABLE = "marketflow.bronze_trades"
 SILVER_TABLE = "marketflow.silver_trades"
 QUARANTINE_TABLE = "marketflow.quarantine_trades"
