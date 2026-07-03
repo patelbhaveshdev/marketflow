@@ -52,6 +52,46 @@ flowchart LR
 | Fabric OneLake shortcut + semantic model refresh | [`fabric/`](fabric) |
 | Unit tests (xUnit + pytest) and GitHub Actions CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 
+## Deployed & verified on Azure
+
+The full pipeline was provisioned and run end-to-end on Azure — not just tested
+locally. Data flows **file → bronze → silver/quarantine → gold → Azure SQL**, and
+the .NET orchestrator runs live on App Service.
+
+| Layer | Azure service | Verified result |
+|-------|---------------|-----------------|
+| Storage | ADLS Gen2 + Unity Catalog Volume | 230 raw OMS records landed |
+| Bronze | Azure Databricks (PySpark) | `bronze_trades` = 230 |
+| Silver | Azure Databricks (dedupe + validation) | `silver_trades` = 200, `quarantine_trades` = 10 |
+| Gold | Databricks → Parquet | daily rollup by symbol / desk / side |
+| Curated | Azure SQL Database (serverless) | `usp_MergeTrades` → `curated.Trades` = 200 (idempotent) |
+| API | Azure App Service (.NET 8) | Swagger live; `POST /api/pipeline/run` → all jobs `Succeeded` |
+
+**Orchestrator running on Azure App Service** — `POST /api/pipeline/run` at a
+public `azurewebsites.net` URL executes all five migrated AutoSys jobs in
+dependency order, every one `Succeeded`:
+
+<p align="center">
+  <img src="docs/screenshots/2026-07-03_05_Post_Pipeline_Run.png" alt="POST /api/pipeline/run on Azure — all five jobs Succeeded in dependency order" width="70%">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/2026-07-03_02.png" alt="GET /api/jobs on Azure App Service showing migrated AutoSys jobs" width="48%">
+  <img src="docs/screenshots/2026-07-03_03.png" alt="GET /api/jobs continued — job dependencies and priorities" width="48%">
+</p>
+
+**Curated layer in Azure SQL** — `curated.Trades` = 200 after the idempotent
+MERGE, and the gold daily summary (`usp_GetDailySummary`) rolled up by
+symbol / desk / side:
+
+<p align="center">
+  <img src="docs/screenshots/2026-07-03_04_Databricks.png" alt="Azure SQL: curated.Trades count = 200 and daily summary stored procedure results" width="70%">
+</p>
+
+> Deployed on Databricks Serverless with Unity Catalog Volumes (no storage keys),
+> Azure SQL serverless (free offer), and App Service (F1). Provisioning steps and
+> teardown are documented in the deployment guide.
+
 ## Sample data
 
 No Azure subscription needed to explore the data flow.
